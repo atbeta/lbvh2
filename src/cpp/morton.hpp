@@ -31,13 +31,16 @@ inline uint64_t expand2(uint64_t a) {
 }
 
 // 3D Morton code: 21 bits per axis -> 63-bit code.
+// x -> bits {0,3,6,...}, y -> {1,4,7,...}, z -> {2,5,8,...}
+// (matches the reference axis ordering).
 inline uint64_t encode3(uint64_t x, uint64_t y, uint64_t z) {
-    return (expand3(x) << 2) | (expand3(y) << 1) | expand3(z);
+    return (expand3(z) << 2) | (expand3(y) << 1) | expand3(x);
 }
 
 // 2D Morton code: 32 bits per axis -> 64-bit code.
+// x -> even bits, y -> odd bits (matches the reference axis ordering).
 inline uint64_t encode2(uint64_t x, uint64_t y) {
-    return (expand2(x) << 1) | expand2(y);
+    return (expand2(y) << 1) | expand2(x);
 }
 
 }  // namespace morton

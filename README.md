@@ -52,8 +52,8 @@ Returns a sorted `(n, 2)` int32 array of `(i, j)` pairs with `i < j`.
 
 ## Design notes
 
-- C++17 core (`src/lbvh2/cpp/`), no external runtime dependencies.
-- nanobind bindings with stable ABI (`abi3`) wheels.
+- C++17 core (`src/cpp/`), no external runtime dependencies.
+- nanobind bindings with stable ABI (`abi3`) wheels (CPython 3.12+).
 - Single-threaded, CPU-only; box-box intersection queries only.
 - Differences vs. the reference `lbvh` package:
   - accepts float64 input (auto-cast) in addition to float32;

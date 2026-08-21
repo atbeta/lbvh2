@@ -34,13 +34,33 @@ def rand_boxes_3d(n, rng):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@pytest.mark.parametrize("n", [0, 1, 2, 5, 50, 500])
+@pytest.mark.parametrize("n", [0, 1, 2, 5, 50, 500, 1000])
 def test_correctness(dim, n):
     rng = np.random.default_rng(12345)
     boxes = rand_boxes_2d(n, rng) if dim == 2 else rand_boxes_3d(n, rng)
     got = find_intersections(boxes)
     expected = brute_force(boxes)
     np.testing.assert_array_equal(got, expected)
+
+
+def test_duplicate_morton_codes():
+    # Many boxes share identical centroids (hence identical Morton codes),
+    # exercising the index-tiebreak path in the shared-prefix computation.
+    rng = np.random.default_rng(11)
+    centers = rng.integers(0, 4, size=(200, 2)) * 0.25  # coarse grid -> ties
+    sizes = rng.uniform(0.05, 0.3, size=(200, 2))
+    boxes = np.stack([centers, centers + sizes], axis=1)
+    got = find_intersections(boxes)
+    expected = brute_force(boxes)
+    np.testing.assert_array_equal(got, expected)
+
+
+def test_nan_boxes_do_not_crash():
+    rng = np.random.default_rng(13)
+    boxes = rand_boxes_2d(100, rng)
+    boxes[::7] = np.nan
+    got = find_intersections(boxes)
+    assert got.ndim == 2 and got.shape[1] == 2
 
 
 def test_all_overlapping():

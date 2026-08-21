@@ -62,7 +62,7 @@ from lbvh2 import find_intersections  # noqa: F401
 | 空输入 `(0, ...)` | 返回空数组 | 返回空数组 | 一致 |
 | 单元素输入 | 正常 | 正常 | 一致 |
 | C++ 依赖 | 链接 `fm` 库（AABB 类型） | 零外部 C++ 依赖，AABB 内联 | 更易维护 |
-| nanobind | 1.x（源码内嵌，cp38–cp311 多 wheel） | 2.x + abi3，单 wheel 覆盖 3.9+ | 打包矩阵更小 |
+| nanobind | 1.x（源码内嵌，cp38–cp311 多 wheel） | 2.x + abi3，单 wheel 覆盖 3.12+ | 打包矩阵更小 |
 
 ### 唯一需要留意的点
 
@@ -104,6 +104,6 @@ assert np.array_equal(find_intersections(boxes), brute_force(boxes))
 | 维度 | 原版 | 自研版 |
 |---|---|---|
 | 构建后端 | scikit-build-core + 内嵌 nanobind 1.x | scikit-build-core + nanobind 2.x |
-| wheel | cp38–cp311，多平台多版本矩阵 | abi3 单 wheel 覆盖 3.9+ |
+| wheel | cp38–cp311，多平台多版本矩阵 | abi3 单 wheel 覆盖 3.12+ |
 | 源码分发 | 需 `fm` + nanobind FetchContent | 纯自包含，`sdist` 含全部头文件 |
 | 内部验证 | — | 无需发布 PyPI，CI 出 wheel 到内部制品库即可 |

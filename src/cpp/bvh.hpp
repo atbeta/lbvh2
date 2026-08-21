@@ -98,8 +98,10 @@ struct BVH {
             // Search in the direction of the neighbor with the longer prefix.
             int d = (prefix_next > prefix_prev) ? 1 : -1;
 
-            // Exponential upper bound on the range length.
-            int lmax = 2;
+            // Exponential upper bound on the range length. Start at 32 like
+            // the reference (the exact start value only affects iteration
+            // count, not the final result).
+            int lmax = 32;
             while (i + lmax * d >= 0 && i + lmax * d < n &&
                    shared_prefix(i, i + lmax * d) > prefix_min) {
                 lmax *= 2;
@@ -220,19 +222,25 @@ private:
     code_t encode(const std::array<float, Dim>& c,
                   const std::array<float, Dim>& lo,
                   const std::array<float, Dim>& span) const {
+        // Normalized coordinate in [0,1], clamped to guard against NaN/Inf
+        // and float rounding at the boundary (u==1.0 would overflow the cast).
+        auto u = [&](int d) -> float {
+            if (!(span[d] > 0.0f)) {
+                return 0.0f;
+            }
+            float v = (c[d] - lo[d]) / span[d];
+            if (!(v >= 0.0f)) return 0.0f;    // NaN or below range
+            if (v > 1.0f) return 1.0f;
+            return v;
+        };
+
         if constexpr (Dim == 2) {
             constexpr float scale = 4294967295.0f;  // 2^32 - 1
-            auto u = [&](int d) {
-                return span[d] > 0.0f ? (c[d] - lo[d]) / span[d] : 0.0f;
-            };
             uint64_t x = static_cast<uint64_t>(u(0) * scale);
             uint64_t y = static_cast<uint64_t>(u(1) * scale);
             return morton::encode2(x, y);
         } else {
             constexpr float scale = 2097151.0f;  // 2^21 - 1
-            auto u = [&](int d) {
-                return span[d] > 0.0f ? (c[d] - lo[d]) / span[d] : 0.0f;
-            };
             uint64_t x = static_cast<uint64_t>(u(0) * scale);
             uint64_t y = static_cast<uint64_t>(u(1) * scale);
             uint64_t z = static_cast<uint64_t>(u(2) * scale);
