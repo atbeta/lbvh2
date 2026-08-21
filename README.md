@@ -10,6 +10,11 @@ Algorithm reference (public):
   and k-d Trees", High Performance Graphics 2012.
 - NVIDIA Developer Blog, "Thinking Parallel" (Parts I–III).
 
+## Migrating from the reference `lbvh`
+
+See [docs/migration-from-lbvh.md](docs/migration-from-lbvh.md) for a
+side-by-side comparison and a drop-in replacement guide.
+
 ## Install (from source)
 
 ```bash
