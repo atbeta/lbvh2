@@ -1,0 +1,10 @@
+.venv/
+build/
+dist/
+__pycache__/
+*.egg-info/
+*.so
+*.pyd
+.pytest_cache/
+.cmake/
+compile_commands.json
