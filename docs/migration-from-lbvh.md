@@ -57,18 +57,19 @@ from lbvh2 import find_intersections  # noqa: F401
 | 维度 | 原版 | 自研版 | 说明 |
 |---|---|---|---|
 | 输入 dtype | 仅 `float32`，传 `float64` 直接报错 | `float32`/`float64` 均可，自动转 | 超集，不破坏旧调用 |
-| 输出顺序 | 无序（遍历顺序不定） | 按 `(i, j)` 字典序排序 | 严格更强，利于回归测试 |
+| 输出顺序 | 无序（遍历顺序不定） | 默认同原版（BVH 遍历序）；可选 `sorted=True` 得字典序 | `sorted` 参数是超集选项 |
 | 输入数组布局 | 要求连续 | 自动 `ascontiguousarray` | 超集 |
 | 空输入 `(0, ...)` | 返回空数组 | 返回空数组 | 一致 |
 | 单元素输入 | 正常 | 正常 | 一致 |
 | C++ 依赖 | 链接 `fm` 库（AABB 类型） | 零外部 C++ 依赖，AABB 内联 | 更易维护 |
-| nanobind | 1.x（源码内嵌，cp38–cp311 多 wheel） | 2.x + abi3，单 wheel 覆盖 3.12+ | 打包矩阵更小 |
+| nanobind | 1.x（源码内嵌，cp38–cp311 多 wheel） | 2.x，per-Python wheel（cp310/cp311/cp312，非 abi3） | abi3 需 cp312+，为支持 3.10 放弃单 wheel |
 
 ### 唯一需要留意的点
 
-**输出顺序**：原版返回未排序的 pair 集合；自研版返回字典序排序后的数组。
-若下游只把结果当「集合」用（绝大多数情况），无任何影响；若依赖原版的具体
-遍历顺序（极少数），需自行排序适配。除此之外全部向后兼容。
+**输出顺序**：默认与原版一致——BVH 遍历序的无序集合；自研版额外提供
+`sorted=True` 获得字典序（确定性输出，利于回归测试；实测大 n 下约慢
+10–30%）。若下游依赖稳定/确定的顺序，需显式传 `sorted=True`，不要假设
+默认输出有序。除此之外全部向后兼容。
 
 ---
 
@@ -104,6 +105,6 @@ assert np.array_equal(find_intersections(boxes), brute_force(boxes))
 | 维度 | 原版 | 自研版 |
 |---|---|---|
 | 构建后端 | scikit-build-core + 内嵌 nanobind 1.x | scikit-build-core + nanobind 2.x |
-| wheel | cp38–cp311，多平台多版本矩阵 | abi3 单 wheel 覆盖 3.12+ |
+| wheel | cp38–cp311，多平台多版本矩阵 | cp310/cp311/cp312 每版本 wheel（非 abi3） |
 | 源码分发 | 需 `fm` + nanobind FetchContent | 纯自包含，`sdist` 含全部头文件 |
 | 内部验证 | — | 无需发布 PyPI，CI 出 wheel 到内部制品库即可 |

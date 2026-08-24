@@ -182,6 +182,9 @@ struct BVH {
             return;
         }
 
+        // Fixed capacity: Morton codes leave <= 60 significant bits and the
+        // same-code tie-break builds a radix tree over 32-bit index bits, so
+        // the tree height stays far below 64 for any int32-indexed input.
         int stack[64];
         int sp = 0;
         stack[sp++] = num_leaves;  // root is internal node num_leaves
@@ -235,7 +238,10 @@ private:
         };
 
         if constexpr (Dim == 2) {
-            constexpr float scale = 4294967295.0f;  // 2^32 - 1
+            // Largest float32 strictly below 2^32 (2^32 - 2^8): 2^32 - 1 is not
+            // representable in float32 and would round up to 2^32, wrapping
+            // through expand2's 32-bit mask to code 0 for centroids at v == 1.0.
+            constexpr float scale = 4294967040.0f;
             uint64_t x = static_cast<uint64_t>(u(0) * scale);
             uint64_t y = static_cast<uint64_t>(u(1) * scale);
             return morton::encode2(x, y);

@@ -33,7 +33,7 @@ boxes = np.array([
     [0.5, 0.5, 1.5, 1.5],
     [1.4, 1.4, 2.4, 2.4],
 ])
-print(find_intersections(boxes))  # -> [[0 1]]
+print(find_intersections(boxes))  # -> [[0 1],[1 2]]
 
 # 3D nested layout: (n, 2, 3) = [[min], [max]]
 boxes3 = np.random.rand(100_000, 2, 3)
