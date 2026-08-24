@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: test (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pytest "scikit-build-core>=0.10" "nanobind>=2.0"
+
+      - name: Build and install lbvh2
+        run: |
+          # Build on the matrix's own Python (required for abi3 wheel tag).
+          python -m pip install .
+
+      - name: Install reference lbvh for comparison tests
+        # The reference is only available for cp38-cp311 wheels on PyPI.
+        # On cp312 it does not build (see project history), so skip those jobs.
+        run: |
+          if [[ "${{ matrix.python-version }}" != "3.12" ]]; then
+            python -m pip install lbvh
+          fi
+        continue-on-error: true  # don't fail the job if PyPI wheels are missing
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v --tb=short
+
+      - name: Run performance benchmark
+        if: matrix.python-version == '3.10'
+        run: |
+          python tests/test_performance.py
+
+      - name: Upload benchmark results
+        if: matrix.python-version == '3.10'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results-py${{ matrix.python-version }}
+          path: bench-results.json
+          retention-days: 30

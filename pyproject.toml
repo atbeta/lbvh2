@@ -7,7 +7,7 @@ name = "lbvh2"
 version = "0.1.0"
 description = "Fast axis-aligned bounding box intersection via linear BVH (self-hosted reimplementation)"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "internal" }]
 classifiers = [
@@ -20,6 +20,7 @@ classifiers = [
 minimum-version = "0.10"
 build-dir = "build/{wheel_tag}"
 wheel.packages = ["src/lbvh2"]
-wheel.py-api = "cp312"
+# No wheel.py-api: per-Python-version wheels (nanobind 2.x requires this
+# on cp310/cp311 because abi3 needs cp312+). See CMakeLists.txt.
 cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
 sdist.include = ["src/cpp/*.hpp", "src/cpp/*.cpp"]

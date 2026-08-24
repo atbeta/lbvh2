@@ -50,6 +50,9 @@ Accepted layouts (input is coerced to contiguous float32):
 
 Returns a sorted `(n, 2)` int32 array of `(i, j)` pairs with `i < j`.
 
+Requires **Python ≥ 3.10** (lowered from 3.12 once we verified the source
+needs no 3.12-only features; only the abi3 wheel tag changed).
+
 ## Design notes
 
 - C++17 core (`src/cpp/`), no external runtime dependencies.
@@ -66,5 +69,21 @@ Returns a sorted `(n, 2)` int32 array of `(i, j)` pairs with `i < j`.
 pytest
 ```
 
-Tests cross-check against a brute-force O(n^2) reference on randomized
-boxes in 2D and 3D.
+The test suite has two parts:
+
+1. **Brute-force cross-check** (`tests/test_lbvh2.py`) — randomized 2D/3D
+   boxes compared against an O(n^2) reference.
+2. **Reference comparison** (`tests/test_against_reference.py`) — runs the
+   same inputs through the original PyPI `lbvh` package and compares pair
+   sets. Skipped automatically unless `pip install lbvh` is run first
+   (the reference only ships wheels up to cp311).
+3. **Performance benchmark** (`tests/test_performance.py`) — emits a JSON
+   ratio of lbvh2 vs reference timings at n = 1k/10k/50k.
+
+Run all three with:
+
+```bash
+pip install lbvh  # enables tests/test_against_reference.py
+pytest tests/
+python tests/test_performance.py  # writes bench-results.json
+```

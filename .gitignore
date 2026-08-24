@@ -8,3 +8,4 @@ __pycache__/
 .pytest_cache/
 .cmake/
 compile_commands.json
+bench-results.json

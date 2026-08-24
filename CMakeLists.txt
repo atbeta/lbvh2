@@ -11,9 +11,11 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 find_package(nanobind CONFIG REQUIRED)
 
+# NOTE: nanobind 2.x only supports stable-ABI (abi3) wheels on Python 3.12+.
+# We target 3.10+ which means we cannot use STABLE_ABI; each Python version
+# gets its own per-version wheel. This matches the original `lbvh` package.
 nanobind_add_module(
     _lbvh2
-    STABLE_ABI
     NB_DOMAIN lbvh2
     src/cpp/bindings.cpp
 )
