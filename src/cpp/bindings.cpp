@@ -51,10 +51,12 @@ std::vector<lbvh2::AABB<Dim>> from_nested(nb::ndarray<float, nb::shape<-1, 2, Di
 }
 
 // Find all intersecting pairs, returning an (n, 2) int32 array of original ids.
-// Pairs are reported with i < j and sorted for determinism.
+// Pairs are reported with i < j. `sort_pairs=true` sorts them lexicographically
+// (slower, but deterministic / easier to test); `sort_pairs=false` emits them
+// in BVH traversal order (matches the reference `lbvh` PyPI package).
 template <int Dim>
 nb::ndarray<nb::numpy, int32_t, nb::shape<-1, 2>> find_pairs(
-    const std::vector<lbvh2::AABB<Dim>>& boxes) {
+    const std::vector<lbvh2::AABB<Dim>>& boxes, bool sort_pairs) {
     lbvh2::BVH<Dim> bvh;
     bvh.build(boxes);
 
@@ -66,7 +68,9 @@ nb::ndarray<nb::numpy, int32_t, nb::shape<-1, 2>> find_pairs(
             }
         });
     }
-    std::sort(pairs.begin(), pairs.end());
+    if (sort_pairs) {
+        std::sort(pairs.begin(), pairs.end());
+    }
 
     int32_t* data = new int32_t[pairs.size() * 2];
     nb::capsule owner(data, [](void* p) noexcept { delete[] static_cast<int32_t*>(p); });
@@ -84,23 +88,34 @@ nb::ndarray<nb::numpy, int32_t, nb::shape<-1, 2>> find_pairs(
 NB_MODULE(_lbvh2, m) {
     m.doc() = "LBVH: fast axis-aligned bounding box intersection (self-hosted reimplementation)";
 
+    // sort_pairs=False by default: matches the reference `lbvh` package's
+    // BVH traversal order. Pass sort_pairs=True for lexicographically
+    // sorted output (deterministic, easier to test, ~30% slower at n=50k).
     m.def("find_intersections",
-          [](nb::ndarray<float, nb::shape<-1, 4>, nb::c_contig, nb::device::cpu> a) {
-              return find_pairs<2>(from_flat<2>(a));
-          });
+          [](nb::ndarray<float, nb::shape<-1, 4>, nb::c_contig, nb::device::cpu> a,
+             bool sort_pairs) {
+              return find_pairs<2>(from_flat<2>(a), sort_pairs);
+          },
+          nb::arg("boxes"), nb::arg("sort_pairs") = false);
 
     m.def("find_intersections",
-          [](nb::ndarray<float, nb::shape<-1, 6>, nb::c_contig, nb::device::cpu> a) {
-              return find_pairs<3>(from_flat<3>(a));
-          });
+          [](nb::ndarray<float, nb::shape<-1, 6>, nb::c_contig, nb::device::cpu> a,
+             bool sort_pairs) {
+              return find_pairs<3>(from_flat<3>(a), sort_pairs);
+          },
+          nb::arg("boxes"), nb::arg("sort_pairs") = false);
 
     m.def("find_intersections",
-          [](nb::ndarray<float, nb::shape<-1, 2, 2>, nb::c_contig, nb::device::cpu> a) {
-              return find_pairs<2>(from_nested<2>(a));
-          });
+          [](nb::ndarray<float, nb::shape<-1, 2, 2>, nb::c_contig, nb::device::cpu> a,
+             bool sort_pairs) {
+              return find_pairs<2>(from_nested<2>(a), sort_pairs);
+          },
+          nb::arg("boxes"), nb::arg("sort_pairs") = false);
 
     m.def("find_intersections",
-          [](nb::ndarray<float, nb::shape<-1, 2, 3>, nb::c_contig, nb::device::cpu> a) {
-              return find_pairs<3>(from_nested<3>(a));
-          });
+          [](nb::ndarray<float, nb::shape<-1, 2, 3>, nb::c_contig, nb::device::cpu> a,
+             bool sort_pairs) {
+              return find_pairs<3>(from_nested<3>(a), sort_pairs);
+          },
+          nb::arg("boxes"), nb::arg("sort_pairs") = false);
 }

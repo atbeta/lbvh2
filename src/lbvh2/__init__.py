@@ -26,18 +26,23 @@ import numpy as np
 from ._lbvh2 import find_intersections as _find_intersections
 
 
-def find_intersections(boxes) -> np.ndarray:
+def find_intersections(boxes, *, sorted: bool = False) -> np.ndarray:
     """Return an (n, 2) int32 array of intersecting box-index pairs.
 
     Parameters
     ----------
     boxes : array-like
         Boxes in one of the supported layouts (see module docstring).
+    sorted : bool, keyword-only, default False
+        If True, return pairs lexicographically sorted by (i, j).
+        If False (default), return pairs in BVH traversal order — this
+        matches the original `lbvh` PyPI package and is ~10-30% faster at
+        large n (the sort cost dominates when there are millions of pairs).
 
     Returns
     -------
     np.ndarray
-        Sorted pairs (i, j) with i < j of the original indices.
+        Pairs (i, j) with i < j of the original indices.
     """
     arr = np.asarray(boxes, dtype=np.float32)
     if arr.ndim == 2 and arr.shape[1] in (4, 6):
@@ -49,7 +54,7 @@ def find_intersections(boxes) -> np.ndarray:
             f"unsupported box layout {arr.shape}; expected (*, 4), (*, 2, 2), "
             f"(*, 6), or (*, 2, 3)"
         )
-    return _find_intersections(arr)
+    return _find_intersections(arr, sorted)
 
 
 __all__ = ["find_intersections"]

@@ -38,7 +38,9 @@ def rand_boxes_3d(n, rng):
 def test_correctness(dim, n):
     rng = np.random.default_rng(12345)
     boxes = rand_boxes_2d(n, rng) if dim == 2 else rand_boxes_3d(n, rng)
-    got = find_intersections(boxes)
+    # Pass sorted=True so the byte-exact array_equal comparison is deterministic
+    # against the brute-force reference (which iterates i then j).
+    got = find_intersections(boxes, sorted=True)
     expected = brute_force(boxes)
     np.testing.assert_array_equal(got, expected)
 
@@ -50,7 +52,7 @@ def test_duplicate_morton_codes():
     centers = rng.integers(0, 4, size=(200, 2)) * 0.25  # coarse grid -> ties
     sizes = rng.uniform(0.05, 0.3, size=(200, 2))
     boxes = np.stack([centers, centers + sizes], axis=1)
-    got = find_intersections(boxes)
+    got = find_intersections(boxes, sorted=True)
     expected = brute_force(boxes)
     np.testing.assert_array_equal(got, expected)
 
@@ -97,10 +99,29 @@ def test_float64_input():
 def test_sorted_deterministic():
     rng = np.random.default_rng(9)
     boxes = rand_boxes_3d(300, rng)
-    got = find_intersections(boxes)
+    # sorted=True makes the output order reproducible regardless of BVH layout.
+    got = find_intersections(boxes, sorted=True)
     assert np.all(got[:, 0] < got[:, 1])
     # lexicographically sorted
     assert np.all(got[:-1, 0] <= got[1:, 0])
+
+
+def test_default_is_unsorted_bvh_order():
+    """By default we emit pairs in BVH traversal order (matches reference lbvh).
+    Verifying that sorted=True changes the order is the strongest test that the
+    flag actually controls behaviour.
+    """
+    rng = np.random.default_rng(11)
+    boxes = rand_boxes_3d(300, rng)
+    unsorted = find_intersections(boxes, sorted=False)
+    sorted_out = find_intersections(boxes, sorted=True)
+
+    # Sets must match, but order should differ in general.
+    assert {tuple(p) for p in unsorted.tolist()} == {tuple(p) for p in sorted_out.tolist()}
+    if len(sorted_out) > 1:
+        # Lex order is strictly monotonic in the first column; BVH order
+        # almost certainly is not.
+        assert not np.array_equal(unsorted, sorted_out)
 
 
 def test_bad_shape_raises():

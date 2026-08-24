@@ -39,6 +39,9 @@ print(find_intersections(boxes))  # -> [[0 1]]
 boxes3 = np.random.rand(100_000, 2, 3)
 boxes3[:, 1] = boxes3[:, 0] + 0.05
 print(len(find_intersections(boxes3)))
+
+# Sorted output (deterministic, ~10-30% slower at large n):
+print(find_intersections(boxes, sorted=True))
 ```
 
 Accepted layouts (input is coerced to contiguous float32):
@@ -48,7 +51,9 @@ Accepted layouts (input is coerced to contiguous float32):
 - `(*, 6)`     — `[min_x, min_y, min_z, max_x, max_y, max_z]`
 - `(*, 2, 3)`  — `[[min_x, min_y, min_z], [max_x, max_y, max_z]]`
 
-Returns a sorted `(n, 2)` int32 array of `(i, j)` pairs with `i < j`.
+Returns an `(n, 2)` int32 array of `(i, j)` pairs with `i < j`. By default
+pairs are emitted in BVH traversal order (matches the reference `lbvh`
+package); pass `sorted=True` for lexicographically sorted output.
 
 Requires **Python ≥ 3.10** (lowered from 3.12 once we verified the source
 needs no 3.12-only features; only the abi3 wheel tag changed).

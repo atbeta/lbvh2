@@ -60,28 +60,32 @@ _has_benchmark = importlib.util.find_spec("pytest_benchmark") is not None
 
 @pytest.mark.skipif(not _has_benchmark, reason="pytest-benchmark not installed")
 @pytest.mark.parametrize("n", SIZES)
-def test_perf_lbvh2_with_pytest_benchmark(benchmark, n: int) -> None:
+@pytest.mark.parametrize("sorted_out", [False, True], ids=["sorted=False", "sorted=True"])
+def test_perf_lbvh2_with_pytest_benchmark(benchmark, n: int, sorted_out: bool) -> None:
     """Run with the pytest-benchmark plugin when available."""
     boxes = _rand_boxes_3d(n, seed=42)
     if HAS_REFERENCE:
         ref_lbvh.find_intersections(boxes[: min(100, n)])
-    result = benchmark(lbvh2.find_intersections, boxes)
+    result = benchmark(lbvh2.find_intersections, boxes, sorted=sorted_out)
     assert len(result) > 0
 
 
 @pytest.mark.parametrize("n", SIZES)
-def test_perf_lbvh2_regression(n: int) -> None:
+@pytest.mark.parametrize("sorted_out", [False, True], ids=["sorted=False", "sorted=True"])
+def test_perf_lbvh2_regression(n: int, sorted_out: bool) -> None:
     """Catch gross regressions: loose upper bound assertion.
 
     Run whether or not pytest-benchmark is installed. CI uses this for
     smoke detection; the standalone runner emits the JSON ratio.
     """
     boxes = _rand_boxes_3d(n, seed=42)
-    t = _time_call(lbvh2.find_intersections, boxes, repeats=3)
+    t = _time_call(
+        lambda b: lbvh2.find_intersections(b, sorted=sorted_out), boxes, repeats=3
+    )
     # Loose upper bound chosen to be ~3x the observed times in CI (3.10).
     # The goal is to catch gross regressions, not to measure ms.
     upper = {1_000: 5.0, 10_000: 60.0, 50_000: 600.0}[n]
-    assert t < upper, f"n={n}: lbvh2 took {t:.2f}s, exceeds budget {upper:.1f}s"
+    assert t < upper, f"n={n} sorted={sorted_out}: lbvh2 took {t:.2f}s, exceeds budget {upper:.1f}s"
 
 
 def _emit_json(results: list[dict]) -> None:
@@ -91,31 +95,47 @@ def _emit_json(results: list[dict]) -> None:
 
 
 def _run_full_bench() -> None:
-    """Standalone runner: prints a table and writes JSON. Used by CI."""
-    print(f"{'n':>8} {'pairs':>10} {'lbvh2_ms':>12} "
-          + (f"{'ref_ms':>10} {'ratio':>8}" if HAS_REFERENCE else ""))
-    print("-" * (44 if HAS_REFERENCE else 24))
+    """Standalone runner: prints a table and writes JSON. Used by CI.
+
+    Reports both the default (sorted=False) and the lexicographic (sorted=True)
+    modes so the JSON can be used to track the cost of sorting.
+    """
+    has_ref = HAS_REFERENCE
+    print(
+        f"{'n':>8} {'mode':>10} {'pairs':>10} {'lbvh2_ms':>12} "
+        + (f"{'ref_ms':>10} {'ratio':>8}" if has_ref else "")
+    )
+    print("-" * (60 if has_ref else 32))
 
     json_rows = []
     for n in SIZES:
         boxes = _rand_boxes_3d(n, seed=42)
-        t_us = _time_call(lbvh2.find_intersections, boxes, repeats=3) * 1000.0
         pairs = len(lbvh2.find_intersections(boxes))
 
-        row = {"n": n, "pairs": pairs, "lbvh2_ms": round(t_us, 3)}
+        for sorted_out in (False, True):
+            label = "sorted" if sorted_out else "default"
+            t_us = _time_call(
+                lambda b: lbvh2.find_intersections(b, sorted=sorted_out),
+                boxes, repeats=3,
+            ) * 1000.0
 
-        if HAS_REFERENCE:
-            t_ref = _time_call(ref_lbvh.find_intersections, boxes, repeats=3) * 1000.0
-            ratio = t_us / t_ref if t_ref > 0 else float("inf")
-            row["ref_ms"] = round(t_ref, 3)
-            row["ratio_lbvh2_over_ref"] = round(ratio, 3)
-            print(f"{n:>8} {pairs:>10} {t_us:>12.2f} {t_ref:>10.2f} {ratio:>8.3f}")
-        else:
-            print(f"{n:>8} {pairs:>10} {t_us:>12.2f}")
+            row = {"n": n, "mode": label, "pairs": pairs, "lbvh2_ms": round(t_us, 3)}
 
-        json_rows.append(row)
+            if has_ref:
+                t_ref = _time_call(ref_lbvh.find_intersections, boxes, repeats=3) * 1000.0
+                ratio = t_us / t_ref if t_ref > 0 else float("inf")
+                row["ref_ms"] = round(t_ref, 3)
+                row["ratio_lbvh2_over_ref"] = round(ratio, 3)
+                print(
+                    f"{n:>8} {label:>10} {pairs:>10} {t_us:>12.2f} "
+                    f"{t_ref:>10.2f} {ratio:>8.3f}"
+                )
+            else:
+                print(f"{n:>8} {label:>10} {pairs:>10} {t_us:>12.2f}")
 
-    print("-" * (44 if HAS_REFERENCE else 24))
+            json_rows.append(row)
+
+    print("-" * (60 if has_ref else 32))
     _emit_json(json_rows)
 
 
