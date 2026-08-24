@@ -214,12 +214,31 @@ struct BVH {
     }
 
 private:
+    // Portable leading-zero count: no compiler intrinsics, so this compiles on
+    // MSVC as well as GCC/Clang (and MinGW). Returns 64 for x == 0, 0 for the
+    // top bit set. Only used during tree construction (O(n log n) calls), not
+    // in the query hot path, so the branch-based form is fine.
     static int clz(uint64_t x) {
-        return x == 0 ? 64 : __builtin_clzll(x);
+        if (x == 0) return 64;
+        int n = 0;
+        if ((x & 0xFFFFFFFF00000000ULL) == 0) { n += 32; x <<= 32; }
+        if ((x & 0xFFFF000000000000ULL) == 0) { n += 16; x <<= 16; }
+        if ((x & 0xFF00000000000000ULL) == 0) { n += 8;  x <<= 8; }
+        if ((x & 0xF000000000000000ULL) == 0) { n += 4;  x <<= 4; }
+        if ((x & 0xC000000000000000ULL) == 0) { n += 2;  x <<= 2; }
+        if ((x & 0x8000000000000000ULL) == 0) { n += 1;  x <<= 1; }
+        return n;
     }
 
     static int clz32(uint32_t x) {
-        return x == 0 ? 32 : __builtin_clz(x);
+        if (x == 0) return 32;
+        int n = 0;
+        if ((x & 0xFFFF0000u) == 0) { n += 16; x <<= 16; }
+        if ((x & 0xFF000000u) == 0) { n += 8;  x <<= 8; }
+        if ((x & 0xF0000000u) == 0) { n += 4;  x <<= 4; }
+        if ((x & 0xC0000000u) == 0) { n += 2;  x <<= 2; }
+        if ((x & 0x80000000u) == 0) { n += 1;  x <<= 1; }
+        return n;
     }
 
     code_t encode(const std::array<float, Dim>& c,

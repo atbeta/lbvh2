@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    name: test (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    name: test (py${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
@@ -36,6 +37,8 @@ jobs:
       - name: Install reference lbvh for comparison tests
         # The reference is only available for cp38-cp311 wheels on PyPI.
         # On cp312 it does not build (see project history), so skip those jobs.
+        # shell: bash explicit — windows-latest defaults to PowerShell.
+        shell: bash
         run: |
           if [[ "${{ matrix.python-version }}" != "3.12" ]]; then
             python -m pip install lbvh
@@ -55,6 +58,6 @@ jobs:
         if: matrix.python-version == '3.10'
         uses: actions/upload-artifact@v4
         with:
-          name: bench-results-py${{ matrix.python-version }}
+          name: bench-results-py${{ matrix.python-version }}-${{ matrix.os }}
           path: bench-results.json
           retention-days: 30

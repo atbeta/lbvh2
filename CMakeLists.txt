@@ -20,6 +20,10 @@ nanobind_add_module(
     src/cpp/bindings.cpp
 )
 
-target_compile_options(_lbvh2 PRIVATE -O3 -funroll-loops)
+# -O3/-funroll-loops are GCC/Clang flags; MSVC would only warn about them,
+# and the Release build type already adds the right -O level per compiler.
+target_compile_options(_lbvh2 PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-O3 -funroll-loops>
+)
 
 install(TARGETS _lbvh2 LIBRARY DESTINATION lbvh2)
