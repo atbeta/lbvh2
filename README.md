@@ -64,6 +64,10 @@ needs no 3.12-only features; only the abi3 wheel tag changed).
 - nanobind 2.x bindings; per-Python-version wheels (`cp310` / `cp311` /
   `cp312`). We do **not** ship abi3 wheels — nanobind 2.x requires
   cp312+ for abi3, and we want to support 3.10 too.
+- Cross-platform: builds and tests pass on Linux (GCC/Clang), macOS
+  (Apple Clang), and Windows (MSVC 19.14+). The C++ core uses portable
+  bitwise leading-zero count instead of `__builtin_clz` so MSVC compiles
+  cleanly. CI matrix covers `ubuntu-latest` and `windows-latest`.
 - Single-threaded, CPU-only; box-box intersection queries only.
 - Differences vs. the reference `lbvh` package:
   - accepts float64 input (auto-cast) in addition to float32;
