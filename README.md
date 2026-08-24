@@ -61,12 +61,27 @@ needs no 3.12-only features; only the abi3 wheel tag changed).
 ## Design notes
 
 - C++17 core (`src/cpp/`), no external runtime dependencies.
-- nanobind bindings with stable ABI (`abi3`) wheels (CPython 3.12+).
+- nanobind 2.x bindings; per-Python-version wheels (`cp310` / `cp311` /
+  `cp312`). We do **not** ship abi3 wheels — nanobind 2.x requires
+  cp312+ for abi3, and we want to support 3.10 too.
 - Single-threaded, CPU-only; box-box intersection queries only.
 - Differences vs. the reference `lbvh` package:
   - accepts float64 input (auto-cast) in addition to float32;
-  - returns deterministic, sorted pairs;
+  - returns BVH-traversal-order pairs by default; pass `sorted=True` for
+    lexicographically sorted output (the reference is always unsorted);
   - no `fm` dependency (AABB is inlined).
+
+## Output order: `sorted` parameter
+
+```python
+find_intersections(boxes)               # default: BVH traversal order
+find_intersections(boxes, sorted=True)  # lex order, deterministic
+```
+
+The default matches the reference `lbvh` for drop-in replacement; users
+who want determinism or easier unit testing can opt into `sorted=True`
+at a measured ~10-30% slowdown for n ≥ 10k (see
+`tests/test_performance.py` for the live ratio).
 
 ## Testing
 
