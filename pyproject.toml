@@ -22,6 +22,13 @@ test = ["pytest>=7", "numpy"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# Without this, setuptools (include_package_data defaults to true under
+# PEP 621) also copies the extension's C++ source into build/lib and the
+# wheel as a stray top-level `cpp/bindings.cpp`. The compiled extension is
+# shipped by ext_modules itself; no extra data files are needed.
+[tool.setuptools]
+include-package-data = false
+
 [tool.setuptools.package-data]
 # Ship the compiled extension with the wheel so `pip install lbvh2-*.whl`
 # drops the .so/.pyd alongside the Python wrapper.

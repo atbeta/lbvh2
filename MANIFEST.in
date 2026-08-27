@@ -1,0 +1,4 @@
+# Headers are referenced via #include from bindings.cpp but setuptools only
+# auto-includes extension *sources* in the sdist; without these, building
+# from an sdist fails with "bvh.hpp: No such file or directory".
+recursive-include src/cpp *.hpp *.cpp
