@@ -27,11 +27,12 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy pytest "scikit-build-core>=0.10" "nanobind>=2.0"
+          python -m pip install numpy pytest "pybind11>=2.10"
 
       - name: Build and install lbvh2
         run: |
-          # Build on the matrix's own Python (required for abi3 wheel tag).
+          # Build on the matrix's own Python — we ship per-Python-version
+          # wheels (no abi3), so each version produces its own wheel tag.
           python -m pip install .
 
       - name: Install reference lbvh for comparison tests

@@ -1,6 +1,6 @@
 [build-system]
-requires = ["scikit-build-core>=0.10", "nanobind>=2.0"]
-build-backend = "scikit_build_core.build"
+requires = ["setuptools>=68", "wheel", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "lbvh2"
@@ -16,11 +16,20 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[tool.scikit-build]
-minimum-version = "0.10"
-build-dir = "build/{wheel_tag}"
-wheel.packages = ["src/lbvh2"]
-# No wheel.py-api: per-Python-version wheels (nanobind 2.x requires this
-# on cp310/cp311 because abi3 needs cp312+). See CMakeLists.txt.
-cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
-sdist.include = ["src/cpp/*.hpp", "src/cpp/*.cpp"]
+[project.optional-dependencies]
+test = ["pytest>=7", "numpy"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Ship the compiled extension with the wheel so `pip install lbvh2-*.whl`
+# drops the .so/.pyd alongside the Python wrapper.
+"lbvh2" = ["_lbvh2*.so", "_lbvh2*.pyd"]
+
+# Per-Python-version wheels (no abi3). Matches the original `lbvh` package.
+# pybind11 has a PYBIND11_BUILD_ABI3 knob, but enabling it would couple us
+# to a single Python-ABI generation — per-version wheels are simpler.
+
+[tool.cibuildwheel]
+build = ["cp310-*", "cp311-*", "cp312-*"]

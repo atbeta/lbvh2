@@ -61,9 +61,11 @@ needs no 3.12-only features; only the abi3 wheel tag changed).
 ## Design notes
 
 - C++17 core (`src/cpp/`), no external runtime dependencies.
-- nanobind 2.x bindings; per-Python-version wheels (`cp310` / `cp311` /
-  `cp312`). We do **not** ship abi3 wheels — nanobind 2.x requires
-  cp312+ for abi3, and we want to support 3.10 too.
+- pybind11 2.10+ bindings, built with plain setuptools +
+  `Pybind11Extension` (no scikit-build-core / no CMake needed).
+  Per-Python-version wheels (`cp310` / `cp311` / `cp312`); we keep
+  per-version wheels to stay consistent with the reference `lbvh`
+  package and to avoid abi3 trade-offs.
 - Cross-platform: builds and tests pass on Linux (GCC/Clang), macOS
   (Apple Clang), and Windows (MSVC 19.14+). The C++ core uses portable
   bitwise leading-zero count instead of `__builtin_clz` so MSVC compiles

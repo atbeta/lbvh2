@@ -104,7 +104,7 @@ assert np.array_equal(find_intersections(boxes), brute_force(boxes))
 
 | 维度 | 原版 | 自研版 |
 |---|---|---|
-| 构建后端 | scikit-build-core + 内嵌 nanobind 1.x | scikit-build-core + nanobind 2.x |
+| 构建后端 | scikit-build-core + 内嵌 nanobind 1.x | setuptools + `Pybind11Extension`（pybind11 2.10+） |
 | wheel | cp38–cp311，多平台多版本矩阵 | cp310/cp311/cp312 每版本 wheel（非 abi3） |
 | 源码分发 | 需 `fm` + nanobind FetchContent | 纯自包含，`sdist` 含全部头文件 |
 | 内部验证 | — | 无需发布 PyPI，CI 出 wheel 到内部制品库即可 |
