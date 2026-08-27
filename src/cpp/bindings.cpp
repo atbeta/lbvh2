@@ -19,11 +19,19 @@ template <int Dim>
 std::vector<lbvh2::AABB<Dim>> from_flat(py::array_t<float> arr) {
     auto buf = arr.request();
     if (buf.ndim != 2 || buf.shape[1] != 2 * Dim) {
-        throw std::runtime_error(
-            "expected shape (n, " + std::to_string(2 * Dim) + ") for Dim=" +
-            std::to_string(Dim) + ", got (" +
-            std::to_string(buf.shape[0]) + ", " +
-            std::to_string(buf.shape[1]) + ")");
+        // Prebuild the message into a local std::string: MSVC can trip over
+        // runtime_error(chained operator+ expression) during overload
+        // resolution — the plain-variable form is bulletproof everywhere.
+        std::string msg = "expected shape (n, ";
+        msg += std::to_string(2 * Dim);
+        msg += ") for Dim=";
+        msg += std::to_string(Dim);
+        msg += ", got (";
+        msg += std::to_string(buf.shape[0]);
+        msg += ", ";
+        msg += std::to_string(buf.shape[1]);
+        msg += ")";
+        throw std::runtime_error(msg);
     }
     size_t n = static_cast<size_t>(buf.shape[0]);
     std::vector<lbvh2::AABB<Dim>> out(n);
@@ -44,12 +52,18 @@ template <int Dim>
 std::vector<lbvh2::AABB<Dim>> from_nested(py::array_t<float> arr) {
     auto buf = arr.request();
     if (buf.ndim != 3 || buf.shape[1] != 2 || buf.shape[2] != Dim) {
-        throw std::runtime_error(
-            "expected shape (n, 2, " + std::to_string(Dim) + ") for Dim=" +
-            std::to_string(Dim) + ", got (" +
-            std::to_string(buf.shape[0]) + ", " +
-            std::to_string(buf.shape[1]) + ", " +
-            std::to_string(buf.shape[2]) + ")");
+        std::string msg = "expected shape (n, 2, ";
+        msg += std::to_string(Dim);
+        msg += ") for Dim=";
+        msg += std::to_string(Dim);
+        msg += ", got (";
+        msg += std::to_string(buf.shape[0]);
+        msg += ", ";
+        msg += std::to_string(buf.shape[1]);
+        msg += ", ";
+        msg += std::to_string(buf.shape[2]);
+        msg += ")";
+        throw std::runtime_error(msg);
     }
     size_t n = static_cast<size_t>(buf.shape[0]);
     std::vector<lbvh2::AABB<Dim>> out(n);
@@ -103,7 +117,7 @@ py::array_t<int32_t> find_pairs(
 // (py::array_t<float>, bool) overloads apart, so we route them here.
 py::array_t<int32_t> dispatch_find_pairs(py::array_t<float> boxes, bool sort_pairs) {
     auto buf = boxes.request();
-    const auto shape_str = [&]() {
+    const std::string shape_str = [&]() {
         std::string s = "(";
         for (ssize_t i = 0; i < buf.ndim; ++i) {
             if (i) s += ", ";
@@ -125,9 +139,12 @@ py::array_t<int32_t> dispatch_find_pairs(py::array_t<float> boxes, bool sort_pai
     if (buf.ndim == 3 && buf.shape[1] == 2 && buf.shape[2] == 3) {
         return find_pairs<3>(from_nested<3>(boxes), sort_pairs);
     }
-    throw std::runtime_error(
-        "unsupported box layout " + shape_str +
-        "; expected (*, 4), (*, 2, 2), (*, 6), or (*, 2, 3)");
+    {
+        std::string msg = "unsupported box layout ";
+        msg += shape_str;
+        msg += "; expected (*, 4), (*, 2, 2), (*, 6), or (*, 2, 3)";
+        throw std::runtime_error(msg);
+    }
 }
 
 }  // namespace

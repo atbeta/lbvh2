@@ -10,14 +10,15 @@ Per-Python-version wheels (no abi3); see pyproject.toml note.
 """
 from __future__ import annotations
 
+import sys
+
 from setuptools import setup
 from pybind11.setup_helpers import Pybind11Extension
 
-# Compiler flags previously set in CMakeLists.txt. Pass as a single list
-# (not a per-compiler dict) because pybind11's cxx_std setter slice-
-# assigns into extra_compile_args and only handles the list form. The
-# GCC/Clang-only flags are no-ops on MSVC; setuptools tolerates that.
-_OPT_FLAGS = ["-O3", "-funroll-loops"]
+# Compiler flags previously set in CMakeLists.txt. -O3/-funroll-loops are
+# GCC/Clang-only; MSVC rejects them as unknown options (D9002 warnings) and
+# its own /O2 default already applies, so drop them entirely on Windows.
+_OPT_FLAGS = [] if sys.platform == "win32" else ["-O3", "-funroll-loops"]
 
 ext_modules = [
     Pybind11Extension(
