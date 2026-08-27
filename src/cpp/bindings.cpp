@@ -119,7 +119,9 @@ py::array_t<int32_t> dispatch_find_pairs(py::array_t<float> boxes, bool sort_pai
     auto buf = boxes.request();
     const std::string shape_str = [&]() {
         std::string s = "(";
-        for (ssize_t i = 0; i < buf.ndim; ++i) {
+        // Use py::ssize_t (pybind11's alias for Py_ssize_t): the plain
+        // `ssize_t` name is unavailable on MSVC (only POSIX headers define it).
+        for (py::ssize_t i = 0; i < buf.ndim; ++i) {
             if (i) s += ", ";
             s += std::to_string(buf.shape[i]);
         }
